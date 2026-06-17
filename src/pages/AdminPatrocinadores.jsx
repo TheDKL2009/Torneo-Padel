@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { savePatrocinador, togglePatrocinador } from '../services/adminData.js'
 import { useAdminData } from '../services/useAdminData.js'
 
@@ -12,7 +13,8 @@ const emptyForm = {
 }
 
 function AdminPatrocinadores() {
-  const { patrocinadores, loading, error, refresh } = useAdminData()
+  const { torneoId } = useParams()
+  const { patrocinadores, loading, error, refresh } = useAdminData(torneoId)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -24,6 +26,7 @@ function AdminPatrocinadores() {
   function editPatrocinador(patrocinador) {
     setForm({
       id: patrocinador.id,
+      torneo_id: patrocinador.torneo_id || torneoId || '',
       nombre: patrocinador.nombre,
       logo_url: patrocinador.logo_url || '',
       web_url: patrocinador.web_url || '',
@@ -38,7 +41,7 @@ function AdminPatrocinadores() {
     setActionError('')
 
     try {
-      await savePatrocinador(form)
+      await savePatrocinador({ ...form, torneo_id: form.torneo_id || torneoId })
       setForm(emptyForm)
       await refresh()
     } catch (currentError) {

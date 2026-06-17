@@ -1,11 +1,14 @@
 import { NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom'
-import { supabase } from '../services/supabaseClient.js'
+import { logout } from '../services/authService.js'
 
 const adminLinks = [
   { to: '/admin', label: 'Dashboard', end: true },
+  { to: '/admin/torneos', label: 'Torneos' },
   { to: '/admin/categorias', label: 'Categorias' },
-  { to: '/admin/parejas', label: 'Parejas' },
+  { to: '/admin/parejas', label: 'Participantes' },
+  { to: '/admin/grupos', label: 'Grupos' },
   { to: '/admin/partidos', label: 'Partidos' },
+  { to: '/admin/pistas', label: 'Pistas' },
   { to: '/admin/patrocinadores', label: 'Patrocinadores' },
 ]
 
@@ -14,7 +17,7 @@ function AdminLayout() {
   const { session } = useOutletContext()
 
   async function handleLogout() {
-    await supabase?.auth.signOut()
+    await logout()
     navigate('/admin/login', { replace: true })
   }
 
@@ -24,7 +27,7 @@ function AdminLayout() {
         <div>
           <p className="eyebrow">Administracion</p>
           <h2>Panel privado</h2>
-          <p className="admin-user">{session.user.email}</p>
+          <p className="admin-user">Modo administrador · {session.user.email}</p>
         </div>
         <nav aria-label="Menu de administracion">
           {adminLinks.map((link) => (

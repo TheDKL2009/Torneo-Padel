@@ -6,9 +6,13 @@ const initialData = {
   parejas: [],
   partidos: [],
   patrocinadores: [],
+  pistas: [],
+  grupos: [],
+  grupoParejas: [],
+  clasificacionesGrupo: [],
 }
 
-export function useAdminData() {
+export function useAdminData(torneoId = null) {
   const [data, setData] = useState(initialData)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -17,7 +21,7 @@ export function useAdminData() {
     try {
       await Promise.resolve()
       setLoading(true)
-      const result = await fetchAdminData()
+      const result = await fetchAdminData(torneoId)
       setData(result)
       setError('')
     } catch (currentError) {
@@ -25,14 +29,14 @@ export function useAdminData() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [torneoId])
 
   useEffect(() => {
     let active = true
 
     async function loadInitialData() {
       try {
-        const result = await fetchAdminData()
+        const result = await fetchAdminData(torneoId)
 
         if (active) {
           setData(result)
@@ -54,7 +58,7 @@ export function useAdminData() {
     return () => {
       active = false
     }
-  }, [])
+  }, [torneoId])
 
   return { ...data, loading, error, refresh }
 }

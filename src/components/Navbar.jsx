@@ -2,7 +2,9 @@ import { NavLink } from 'react-router-dom'
 
 const publicLinks = [
   { to: '/', label: 'Inicio' },
+  { to: '/torneos', label: 'Torneos' },
   { to: '/categorias', label: 'Categorias' },
+  { to: '/grupos', label: 'Grupos' },
   { to: '/cuadros', label: 'Cuadros' },
   { to: '/partidos', label: 'Partidos' },
   { to: '/horarios', label: 'Horarios' },
@@ -21,9 +23,6 @@ function Navbar() {
           {link.label}
         </NavLink>
       ))}
-      <NavLink to="/admin" className="nav-link admin-entry">
-        Admin
-      </NavLink>
     </nav>
   )
 }

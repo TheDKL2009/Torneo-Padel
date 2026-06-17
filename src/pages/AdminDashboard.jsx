@@ -1,10 +1,12 @@
+import { useParams } from 'react-router-dom'
 import { useAdminData } from '../services/useAdminData.js'
 
 function AdminDashboard() {
-  const { categorias, parejas, partidos, patrocinadores, loading, error } = useAdminData()
+  const { torneoId } = useParams()
+  const { categorias, parejas, partidos, patrocinadores, loading, error } = useAdminData(torneoId)
   const stats = [
     { label: 'Categorias', value: categorias.length },
-    { label: 'Parejas', value: parejas.length },
+    { label: 'Participantes', value: parejas.length },
     { label: 'Partidos', value: partidos.length },
     { label: 'Patrocinadores', value: patrocinadores.length },
   ]

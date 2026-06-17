@@ -9,8 +9,8 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: #eef2f7;
-  color: #1f2937;
+  background: #f5f7fa;
+  color: #111827;
 }
 
 img {
@@ -36,8 +36,8 @@ button {
 input,
 textarea,
 select {
-  border-radius: 14px;
-  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
   padding: 0.95rem 1rem;
   background: #fff;
   color: #111827;
@@ -47,7 +47,7 @@ select {
 input:focus,
 textarea:focus,
 select:focus {
-  outline: 2px solid rgba(31, 111, 235, 0.24);
+  outline: 3px solid rgba(48, 79, 254, 0.16);
   outline-offset: 2px;
 }
 

@@ -1,10 +1,13 @@
+import { useParams } from 'react-router-dom'
+import PublicTournamentFilter from '../components/PublicTournamentFilter.jsx'
 import { usePublicData } from '../services/usePublicData.js'
+import { usePublicTournamentFilter } from '../services/usePublicTournamentFilter.js'
 
 function groupSchedule(items) {
   return items.reduce((days, partido) => {
-    const fecha = partido.fecha
-    const hora = partido.hora
-    const pista = partido.pista
+    const fecha = partido.fecha || 'Horario pendiente'
+    const hora = partido.hora || 'Horario pendiente'
+    const pista = partido.pista || 'Pista pendiente'
 
     days[fecha] ??= {}
     days[fecha][hora] ??= {}
@@ -16,7 +19,9 @@ function groupSchedule(items) {
 }
 
 function Horarios() {
-  const { partidos, loading, error } = usePublicData()
+  const { torneoId } = useParams()
+  const tournamentFilter = usePublicTournamentFilter(torneoId)
+  const { partidos, loading, error } = usePublicData(tournamentFilter.effectiveTorneoId)
   const agenda = groupSchedule(partidos)
 
   return (
@@ -25,6 +30,15 @@ function Horarios() {
         <p className="eyebrow">Horarios</p>
         <h2>Agenda por fecha, hora y pista</h2>
       </div>
+
+      <PublicTournamentFilter
+        hidden={!tournamentFilter.showTournamentFilter}
+        torneos={tournamentFilter.torneos}
+        value={tournamentFilter.selectedTorneoId}
+        onChange={tournamentFilter.setSelectedTorneoId}
+      />
+      {tournamentFilter.loadingTorneos && <p className="info-state">Cargando torneos...</p>}
+      {tournamentFilter.torneosError && <p className="error-state">{tournamentFilter.torneosError}</p>}
 
       {loading && <p className="info-state">Cargando horarios...</p>}
       {error && <p className="error-state">{error.message}</p>}

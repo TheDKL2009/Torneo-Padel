@@ -1,4 +1,4 @@
-function CategoryCard({ category, totalParejas = 0 }) {
+function CategoryCard({ category, totalParejas = 0, participantCountLabel = 'parejas inscritas' }) {
   return (
     <article className="category-card">
       <div>
@@ -6,7 +6,7 @@ function CategoryCard({ category, totalParejas = 0 }) {
         <h3>{category.nombre}</h3>
       </div>
       <p>{category.descripcion}</p>
-      <span>{totalParejas} parejas inscritas</span>
+      <span>{totalParejas} {participantCountLabel}</span>
     </article>
   )
 }

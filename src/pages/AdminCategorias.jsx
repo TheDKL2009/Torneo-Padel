@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { saveCategoria, toggleCategoria } from '../services/adminData.js'
+import { getTorneosAdmin } from '../services/torneoService.js'
 import { useAdminData } from '../services/useAdminData.js'
 
 const emptyForm = {
   id: '',
+  torneo_id: '',
   nombre: '',
   tipo: '',
   orden: 0,
@@ -11,10 +14,50 @@ const emptyForm = {
 }
 
 function AdminCategorias() {
-  const { categorias, loading, error, refresh } = useAdminData()
+  const { torneoId } = useParams()
+  const { categorias, loading, error, refresh } = useAdminData(torneoId)
   const [form, setForm] = useState(emptyForm)
+  const [torneos, setTorneos] = useState([])
+  const [torneosError, setTorneosError] = useState('')
   const [saving, setSaving] = useState(false)
   const [actionError, setActionError] = useState('')
+  const showTorneoSelector = !torneoId
+
+  const currentEmptyForm = useMemo(
+    () => ({ ...emptyForm, torneo_id: torneoId || form.torneo_id || '' }),
+    [form.torneo_id, torneoId],
+  )
+
+  useEffect(() => {
+    if (torneoId) {
+      return undefined
+    }
+
+    let active = true
+
+    async function loadTorneos() {
+      try {
+        const result = await getTorneosAdmin()
+        if (active) {
+          setTorneos(result)
+          setTorneosError('')
+          if (result.length === 1) {
+            setForm((current) => (current.torneo_id ? current : { ...current, torneo_id: result[0].id }))
+          }
+        }
+      } catch (currentError) {
+        if (active) {
+          setTorneosError(currentError.message)
+        }
+      }
+    }
+
+    loadTorneos()
+
+    return () => {
+      active = false
+    }
+  }, [torneoId])
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -23,6 +66,7 @@ function AdminCategorias() {
   function editCategoria(categoria) {
     setForm({
       id: categoria.id,
+      torneo_id: categoria.torneo_id || torneoId || '',
       nombre: categoria.nombre,
       tipo: categoria.tipo,
       orden: categoria.orden,
@@ -36,8 +80,9 @@ function AdminCategorias() {
     setActionError('')
 
     try {
-      await saveCategoria(form)
-      setForm(emptyForm)
+      const selectedTorneoId = form.torneo_id || torneoId || ''
+      await saveCategoria({ ...form, torneo_id: selectedTorneoId })
+      setForm({ ...emptyForm, torneo_id: showTorneoSelector ? selectedTorneoId : torneoId || '' })
       await refresh()
     } catch (currentError) {
       setActionError(currentError.message)
@@ -66,6 +111,23 @@ function AdminCategorias() {
 
       <form className="admin-form" onSubmit={handleSubmit}>
         <h3>{form.id ? 'Editar categoria' : 'Crear categoria'}</h3>
+        {showTorneoSelector && (
+          <label>
+            Torneo
+            <select
+              value={form.torneo_id}
+              onChange={(event) => updateField('torneo_id', event.target.value)}
+              required
+            >
+              <option value="">Selecciona un torneo</option>
+              {torneos.map((torneo) => (
+                <option key={torneo.id} value={torneo.id}>
+                  {torneo.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label>
           Nombre
           <input value={form.nombre} onChange={(event) => updateField('nombre', event.target.value)} required />
@@ -90,13 +152,14 @@ function AdminCategorias() {
           />
           Activa
         </label>
+        {torneosError && <p className="error-state">{torneosError}</p>}
         {actionError && <p className="error-state">{actionError}</p>}
         <div className="form-actions">
           <button className="primary-button" type="submit" disabled={saving}>
             {saving ? 'Guardando...' : 'Guardar'}
           </button>
           {form.id && (
-            <button className="secondary-button" type="button" onClick={() => setForm(emptyForm)}>
+            <button className="secondary-button" type="button" onClick={() => setForm(currentEmptyForm)}>
               Cancelar
             </button>
           )}
