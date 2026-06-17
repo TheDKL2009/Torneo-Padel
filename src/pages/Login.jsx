@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { getCurrentSession, isAdmin, login, logout } from '../services/authService.js'
 import { supabase } from '../services/supabaseClient.js'
 
 function Login() {
@@ -17,10 +18,14 @@ function Login() {
     }
 
     async function redirectIfLoggedIn() {
-      const { data } = await supabase.auth.getSession()
+      try {
+        const session = await getCurrentSession()
 
-      if (data.session) {
-        navigate(from, { replace: true })
+        if (session && isAdmin(session.user)) {
+          navigate(from, { replace: true })
+        }
+      } catch {
+        // Login already shows Supabase configuration/auth errors on submit.
       }
     }
 
@@ -38,19 +43,21 @@ function Login() {
 
     setLoading(true)
 
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { user } = await login(email, password)
 
-    setLoading(false)
+      if (!isAdmin(user)) {
+        await logout()
+        setError('Tu usuario no tiene permisos de administracion.')
+        return
+      }
 
-    if (loginError) {
+      navigate(from, { replace: true })
+    } catch (loginError) {
       setError(loginError.message)
-      return
+    } finally {
+      setLoading(false)
     }
-
-    navigate(from, { replace: true })
   }
 
   return (
