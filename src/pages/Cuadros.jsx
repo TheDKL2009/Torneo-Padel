@@ -1,13 +1,12 @@
 import { forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
 import { usePublicData } from '../hooks/usePublicData.js'
 
-// Slot height = match card height + vertical gap between cards
-// Must stay in sync with .bracket-match height (2 × 38px rows + 2px borders = 78px) + 14px gap
 const SLOT_H = 92
 
 const ROUNDS = [
-  { key: '16avos', label: '16° de Final' },
+  { key: '16avos', label: '16avos' },
   { key: 'octavos', label: 'Octavos' },
   { key: 'cuartos', label: 'Cuartos' },
   { key: 'semifinal', label: 'Semifinal' },
@@ -16,44 +15,310 @@ const ROUNDS = [
 ]
 
 function normalizeRound(value = '') {
-  const r = value.toLowerCase().trim()
-  if (r.includes('16') || r.includes('diecis')) return '16avos'
-  if (r.includes('octavo')) return 'octavos'
-  if (r.includes('cuarto')) return 'cuartos'
+  const r = value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+
+  if (r.includes('grupo')) return 'grupos'
+  if (r.includes('16') || r.includes('dieciseis') || r.includes('dieciseisavos')) return '16avos'
+  if (r.includes('octavo') || r === 'octavos') return 'octavos'
+  if (r.includes('cuarto') || r === 'cuartos') return 'cuartos'
   if (r.includes('semi')) return 'semifinal'
   if (r.includes('tercer') || r.includes('3er') || r.includes('bronce') || r.includes('puesto')) return '3er_puesto'
   if (r.includes('final')) return 'final'
   return 'otros'
 }
 
-function groupByCategoryAndRound(categorias, partidos) {
-  return categorias.map((categoria) => {
-    const catPartidos = partidos.filter((p) => p.categoriaId === categoria.id)
-    const byRound = {}
+function sortMatches(a, b) {
+  return (a.ordenRonda ?? a.orden ?? Infinity) - (b.ordenRonda ?? b.orden ?? Infinity)
+}
 
-    catPartidos.forEach((p) => {
-      const key = normalizeRound(p.ronda)
-      ;(byRound[key] ??= []).push(p)
+function groupEliminationRounds(partidos) {
+  const byRound = {}
+
+  partidos
+    .filter((partido) => partido.fase !== 'grupos')
+    .forEach((partido) => {
+      const key = normalizeRound(partido.ronda)
+      if (key === 'grupos') return
+      ;(byRound[key] ??= []).push(partido)
     })
 
-    Object.values(byRound).forEach((arr) =>
-      arr.sort((a, b) => (a.orden ?? Infinity) - (b.orden ?? Infinity)),
-    )
+  Object.values(byRound).forEach((matches) => matches.sort(sortMatches))
 
-    const rounds = ROUNDS.filter((r) => byRound[r.key]?.length > 0).map((r) => ({
-      ...r,
-      matches: byRound[r.key],
-    }))
+  const rounds = ROUNDS.filter((round) => byRound[round.key]?.length).map((round) => ({
+    ...round,
+    matches: byRound[round.key],
+  }))
 
-    if (byRound.otros?.length > 0) {
-      rounds.push({ key: 'otros', label: 'Otros', matches: byRound.otros })
-    }
+  if (byRound.otros?.length) {
+    rounds.push({ key: 'otros', label: 'Otros', matches: byRound.otros })
+  }
 
-    return { categoria, rounds }
+  return rounds
+}
+
+function emptyStanding(grupo, pareja, orden) {
+  return {
+    grupoId: grupo.id,
+    grupoNombre: grupo.nombre,
+    parejaId: pareja.id,
+    nombre: pareja.nombre,
+    orden,
+    pj: 0,
+    pg: 0,
+    pe: 0,
+    pp: 0,
+    gf: 0,
+    gc: 0,
+    dg: 0,
+    pts: 0,
+  }
+}
+
+function hasGoals(match) {
+  return Number.isFinite(Number(match.goles?.a)) && Number.isFinite(Number(match.goles?.b))
+}
+
+function calculateStandings({ grupos, grupoParejas, parejasMap, partidos }) {
+  return grupos.map((grupo) => {
+    const asignaciones = grupoParejas
+      .filter((asignacion) => asignacion.grupoId === grupo.id)
+      .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+
+    const rowsByPair = new Map()
+
+    asignaciones.forEach((asignacion, index) => {
+      const pareja = parejasMap.get(asignacion.parejaId)
+      if (pareja) rowsByPair.set(pareja.id, emptyStanding(grupo, pareja, index))
+    })
+
+    partidos
+      .filter((partido) => partido.grupoId === grupo.id && partido.estadoRaw === 'finalizado')
+      .forEach((partido) => {
+        const rowA = rowsByPair.get(partido.parejaAId)
+        const rowB = rowsByPair.get(partido.parejaBId)
+        if (!rowA || !rowB) return
+
+        rowA.pj += 1
+        rowB.pj += 1
+
+        if (hasGoals(partido)) {
+          const golesA = Number(partido.goles.a)
+          const golesB = Number(partido.goles.b)
+
+          rowA.gf += golesA
+          rowA.gc += golesB
+          rowB.gf += golesB
+          rowB.gc += golesA
+
+          if (golesA > golesB) {
+            rowA.pg += 1
+            rowB.pp += 1
+            rowA.pts += 3
+          } else if (golesB > golesA) {
+            rowB.pg += 1
+            rowA.pp += 1
+            rowB.pts += 3
+          } else {
+            rowA.pe += 1
+            rowB.pe += 1
+            rowA.pts += 1
+            rowB.pts += 1
+          }
+          return
+        }
+
+        if (partido.ganadorId === partido.parejaAId) {
+          rowA.pg += 1
+          rowB.pp += 1
+          rowA.pts += 3
+        } else if (partido.ganadorId === partido.parejaBId) {
+          rowB.pg += 1
+          rowA.pp += 1
+          rowB.pts += 3
+        }
+      })
+
+    const rows = [...rowsByPair.values()]
+      .map((row) => ({ ...row, dg: row.gf - row.gc }))
+      .sort((a, b) =>
+        b.pts - a.pts ||
+        b.dg - a.dg ||
+        b.gf - a.gf ||
+        a.orden - b.orden ||
+        a.nombre.localeCompare(b.nombre)
+      )
+      .map((row, index) => ({ ...row, posicion: index + 1 }))
+
+    return { grupo, rows }
   })
 }
 
-// ─── BracketTeam ─────────────────────────────────────────────────────────────
+function formatMatchResult(match) {
+  return match.marcador || 'Pendiente'
+}
+
+function TabsCategorias({ categorias, selectedId, onSelect }) {
+  return (
+    <div className="category-tabs" role="tablist" aria-label="Categorias">
+      {categorias.map((categoria) => (
+        <button
+          key={categoria.id}
+          type="button"
+          role="tab"
+          aria-selected={categoria.id === selectedId}
+          className={categoria.id === selectedId ? 'category-tab active' : 'category-tab'}
+          onClick={() => onSelect(categoria.id)}
+        >
+          <span>{categoria.nombre}</span>
+          <small>{categoria.nivel}</small>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function TablaGrupo({ grupoData, selectedParejaId, onParejaClick }) {
+  return (
+    <div className="standings-table group-standings">
+      <div className="standings-row standings-head">
+        <span>Pos</span>
+        <span>Equipo</span>
+        <span>PJ</span>
+        <span>PG</span>
+        <span>PE</span>
+        <span>PP</span>
+        <span>GF</span>
+        <span>GC</span>
+        <span>DG</span>
+        <span>PTS</span>
+      </div>
+      {grupoData.rows.map((row) => (
+        <button
+          key={row.parejaId}
+          type="button"
+          className={row.parejaId === selectedParejaId ? 'standings-row standings-row-button selected' : 'standings-row standings-row-button'}
+          onClick={() => onParejaClick(row.parejaId)}
+        >
+          <span>{row.posicion}</span>
+          <strong>{row.nombre}</strong>
+          <span>{row.pj}</span>
+          <span>{row.pg}</span>
+          <span>{row.pe}</span>
+          <span>{row.pp}</span>
+          <span>{row.gf}</span>
+          <span>{row.gc}</span>
+          <span>{row.dg}</span>
+          <span>{row.pts}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function ListaPartidosGrupo({ partidos, selectedParejaId, onParejaClick }) {
+  if (!partidos.length) {
+    return <p className="info-state">Todavia no hay partidos generados para este grupo.</p>
+  }
+
+  return (
+    <div className="group-match-list">
+      {partidos.sort(sortMatches).map((partido) => (
+        <article key={partido.id} className="group-match-row">
+          <button
+            type="button"
+            className={partido.parejaAId === selectedParejaId ? 'group-match-team selected' : 'group-match-team'}
+            onClick={() => onParejaClick(partido.parejaAId)}
+            disabled={!partido.parejaAId}
+          >
+            {partido.parejaA?.nombre || 'Por definir'}
+          </button>
+          <span className="group-match-score">{formatMatchResult(partido)}</span>
+          <button
+            type="button"
+            className={partido.parejaBId === selectedParejaId ? 'group-match-team selected' : 'group-match-team'}
+            onClick={() => onParejaClick(partido.parejaBId)}
+            disabled={!partido.parejaBId}
+          >
+            {partido.parejaB?.nombre || 'Por definir'}
+          </button>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function VistaFaseGrupos({ gruposData, partidosGrupo, selectedParejaId, onParejaClick }) {
+  if (!gruposData.length) return null
+
+  return (
+    <section className="groups-stage">
+      <div className="section-heading compact-heading">
+        <p className="eyebrow">Fase de grupos</p>
+        <h3>Clasificacion y partidos</h3>
+      </div>
+      <div className="public-groups-grid">
+        {gruposData.map((grupoData) => {
+          const partidosDelGrupo = partidosGrupo.filter((partido) => partido.grupoId === grupoData.grupo.id)
+
+          return (
+            <article key={grupoData.grupo.id} className="group-panel">
+              <div className="group-panel__header">
+                <h3>{grupoData.grupo.nombre}</h3>
+              </div>
+              <TablaGrupo
+                grupoData={grupoData}
+                selectedParejaId={selectedParejaId}
+                onParejaClick={onParejaClick}
+              />
+              <div className="group-matches">
+                <h4>Partidos</h4>
+                <ListaPartidosGrupo
+                  partidos={partidosDelGrupo}
+                  selectedParejaId={selectedParejaId}
+                  onParejaClick={onParejaClick}
+                />
+              </div>
+            </article>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+function PreviewCruces({ gruposData, clasificanPorGrupo }) {
+  if (gruposData.length !== 2 || !clasificanPorGrupo) return null
+
+  const [grupoA, grupoB] = gruposData
+  const cruces = []
+
+  for (let index = 1; index <= clasificanPorGrupo; index += 1) {
+    const opposite = clasificanPorGrupo - index + 1
+    cruces.push([`${index}º ${grupoA.grupo.nombre}`, `${opposite}º ${grupoB.grupo.nombre}`])
+  }
+
+  return (
+    <section className="preview-bracket">
+      <div className="section-heading compact-heading">
+        <p className="eyebrow">Preview</p>
+        <h3>Cruces previstos</h3>
+      </div>
+      <div className="preview-match-list">
+        {cruces.map(([a, b]) => (
+          <article key={`${a}-${b}`} className="preview-match">
+            <span>{a}</span>
+            <strong>vs</strong>
+            <span>{b}</span>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
 
 function BracketTeam({ name, scores = [], isWinner, isSelected, clickable, onClick }) {
   let cls = 'bracket-team'
@@ -85,8 +350,6 @@ function BracketTeam({ name, scores = [], isWinner, isSelected, clickable, onCli
     </div>
   )
 }
-
-// ─── BracketMatchCard ─────────────────────────────────────────────────────────
 
 const BracketMatchCard = forwardRef(function BracketMatchCard(
   { match, selectedParejaId, isActivated, onParejaClick },
@@ -129,8 +392,6 @@ const BracketMatchCard = forwardRef(function BracketMatchCard(
   )
 })
 
-// ─── BracketSection ───────────────────────────────────────────────────────────
-
 function BracketSection({ categoria, rounds, selectedParejaId, onParejaClick, onClearSelection }) {
   const boardRef = useRef(null)
   const matchRefs = useRef({})
@@ -142,7 +403,6 @@ function BracketSection({ categoria, rounds, selectedParejaId, onParejaClick, on
   )
   const boardH = maxMatchCount * SLOT_H
 
-  // Which matches and connectors belong to the selected pareja's path
   const { activatedMatchIds, activatedConnectorKeys } = useMemo(() => {
     if (!selectedParejaId) return { activatedMatchIds: null, activatedConnectorKeys: null }
 
@@ -166,7 +426,6 @@ function BracketSection({ categoria, rounds, selectedParejaId, onParejaClick, on
     return { activatedMatchIds, activatedConnectorKeys }
   }, [selectedParejaId, rounds])
 
-  // Build SVG elbow connector paths from DOM measurements
   const computePaths = useCallback(() => {
     if (!boardRef.current) return
     const board = boardRef.current.getBoundingClientRect()
@@ -257,12 +516,7 @@ function BracketSection({ categoria, rounds, selectedParejaId, onParejaClick, on
                       ref={(el) => { matchRefs.current[`${roundIdx}-${matchIdx}`] = el }}
                       match={match}
                       selectedParejaId={selectedParejaId}
-                      isActivated={
-                        !hasSelection ||
-                        !match ||
-                        activatedMatchIds?.has(match.id) ||
-                        false
-                      }
+                      isActivated={!hasSelection || !match || activatedMatchIds?.has(match.id) || false}
                       onParejaClick={onParejaClick}
                     />
                   ))}
@@ -300,19 +554,52 @@ function BracketSection({ categoria, rounds, selectedParejaId, onParejaClick, on
   )
 }
 
-// ─── Cuadros (page) ───────────────────────────────────────────────────────────
-
 function Cuadros() {
   useDocumentTitle('Cuadros')
-  const { categorias, partidos, loading, error } = usePublicData()
+  const { categorias, parejas, partidos, grupos, grupoParejas, loading, error } = usePublicData()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [selectedParejaId, setSelectedParejaId] = useState(null)
 
-  const cuadros = useMemo(
-    () => groupByCategoryAndRound(categorias, partidos),
-    [categorias, partidos],
+  const selectedCategoryId = useMemo(() => {
+    const fromUrl = searchParams.get('categoria')
+    return categorias.some((categoria) => categoria.id === fromUrl) ? fromUrl : categorias[0]?.id
+  }, [categorias, searchParams])
+
+  const selectedCategory = categorias.find((categoria) => categoria.id === selectedCategoryId)
+  const categoryMatches = partidos.filter((partido) => partido.categoriaId === selectedCategoryId)
+  const partidosGrupo = categoryMatches.filter((partido) => partido.fase === 'grupos')
+  const partidosEliminatoria = categoryMatches.filter((partido) => partido.fase !== 'grupos')
+  const gruposCategoria = grupos
+    .filter((grupo) => grupo.categoriaId === selectedCategoryId)
+    .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+
+  const parejasMap = useMemo(
+    () => new Map(parejas.map((pareja) => [pareja.id, pareja])),
+    [parejas],
   )
 
+  const gruposData = useMemo(
+    () => calculateStandings({
+      grupos: gruposCategoria,
+      grupoParejas,
+      parejasMap,
+      partidos: partidosGrupo,
+    }),
+    [gruposCategoria, grupoParejas, parejasMap, partidosGrupo],
+  )
+
+  const rounds = useMemo(
+    () => groupEliminationRounds(partidosEliminatoria),
+    [partidosEliminatoria],
+  )
+
+  function handleCategorySelect(id) {
+    setSelectedParejaId(null)
+    setSearchParams({ categoria: id })
+  }
+
   function handleParejaClick(id) {
+    if (!id) return
     setSelectedParejaId((prev) => (prev === id ? null : id))
   }
 
@@ -320,32 +607,60 @@ function Cuadros() {
     <section className="page-stack">
       <div className="section-heading">
         <p className="eyebrow">Cuadros</p>
-        <h2>Cuadros eliminatorios</h2>
+        <h2>Cuadros y fase de grupos</h2>
       </div>
-
-      {selectedParejaId && (
-        <p className="bracket-hint">
-          Haz click sobre otra pareja para cambiar el camino, o fuera del cuadro para quitar el filtro.
-        </p>
-      )}
 
       {loading && <p className="info-state">Cargando cuadros...</p>}
       {error && <p className="error-state">{error.message}</p>}
 
-      <div className="bracket-list">
-        {cuadros.map(({ categoria, rounds }) =>
-          rounds.length > 0 ? (
-            <BracketSection
-              key={categoria.id}
-              categoria={categoria}
-              rounds={rounds}
-              selectedParejaId={selectedParejaId}
-              onParejaClick={handleParejaClick}
-              onClearSelection={() => setSelectedParejaId(null)}
-            />
-          ) : null,
-        )}
-      </div>
+      {!loading && categorias.length > 0 && (
+        <TabsCategorias
+          categorias={categorias}
+          selectedId={selectedCategoryId}
+          onSelect={handleCategorySelect}
+        />
+      )}
+
+      {selectedParejaId && (
+        <p className="bracket-hint">
+          Haz click sobre otro participante para cambiar el filtro, o sobre el mismo para quitarlo.
+        </p>
+      )}
+
+      {selectedCategory && (
+        <>
+          <VistaFaseGrupos
+            gruposData={gruposData}
+            partidosGrupo={partidosGrupo}
+            selectedParejaId={selectedParejaId}
+            onParejaClick={handleParejaClick}
+          />
+
+          <section className="elimination-stage">
+            <div className="section-heading compact-heading">
+              <p className="eyebrow">Eliminatorias</p>
+              <h3>Cuadro final</h3>
+            </div>
+            {rounds.length ? (
+              <BracketSection
+                categoria={selectedCategory}
+                rounds={rounds}
+                selectedParejaId={selectedParejaId}
+                onParejaClick={handleParejaClick}
+                onClearSelection={() => setSelectedParejaId(null)}
+              />
+            ) : (
+              <>
+                <p className="info-state">Todavia no hay partidos eliminatorios generados para esta categoria.</p>
+                <PreviewCruces
+                  gruposData={gruposData}
+                  clasificanPorGrupo={selectedCategory.clasificanPorGrupo}
+                />
+              </>
+            )}
+          </section>
+        </>
+      )}
     </section>
   )
 }

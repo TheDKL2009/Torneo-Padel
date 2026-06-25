@@ -37,7 +37,7 @@ function toFieldValue(value) {
 }
 
 function exportarCSV(partidos, parejasMap, categoriasMap) {
-  const headers = ['Categoría', 'Ronda', 'Pareja A', 'Pareja B', 'Fecha', 'Hora', 'Pista', 'Estado', 'Set 1', 'Set 2', 'Set 3', 'Ganador']
+  const headers = ['Categoria', 'Ronda', 'Participante A', 'Participante B', 'Fecha', 'Hora', 'Pista', 'Estado', 'Set 1', 'Set 2', 'Set 3', 'Ganador']
   const rows = partidos.map((p) => {
     const set = (a, b) => a !== null && b !== null ? `${a}-${b}` : ''
     return [
@@ -58,7 +58,7 @@ function exportarCSV(partidos, parejasMap, categoriasMap) {
   const csv = [headers, ...rows]
     .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
     .join('\n')
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -116,7 +116,7 @@ function AdminPartidos() {
   function editPartido(partido) {
     if (
       partido.estado === 'finalizado' &&
-      !window.confirm('Este partido ya está finalizado. ¿Editar igualmente?')
+      !window.confirm('Este partido ya esta finalizado. Editar igualmente?')
     ) {
       return
     }
@@ -144,7 +144,7 @@ function AdminPartidos() {
   async function handleSubmit(event) {
     event.preventDefault()
     if (!form.categoria_id) {
-      setActionError('Selecciona una categoría.')
+      setActionError('Selecciona una categoria.')
       return
     }
     if (!form.ronda.trim()) {
@@ -152,7 +152,7 @@ function AdminPartidos() {
       return
     }
     if (form.pareja_a_id && form.pareja_a_id === form.pareja_b_id) {
-      setActionError('Las dos parejas deben ser distintas.')
+      setActionError('Los dos participantes deben ser distintos.')
       return
     }
     setSaving(true)
@@ -195,9 +195,9 @@ function AdminPartidos() {
           <input value={form.ronda} onChange={(event) => updateField('ronda', event.target.value)} required />
         </label>
         <label>
-          Pareja A
+          Participante A
           <select value={form.pareja_a_id} onChange={(event) => updateField('pareja_a_id', event.target.value)} required>
-            <option value="">Selecciona pareja</option>
+            <option value="">Selecciona participante</option>
             {parejasParaA.map((pareja) => (
               <option key={pareja.id} value={pareja.id}>
                 {getPairName(pareja)}
@@ -206,9 +206,9 @@ function AdminPartidos() {
           </select>
         </label>
         <label>
-          Pareja B
+          Participante B
           <select value={form.pareja_b_id} onChange={(event) => updateField('pareja_b_id', event.target.value)} required>
-            <option value="">Selecciona pareja</option>
+            <option value="">Selecciona participante</option>
             {parejasParaB.map((pareja) => (
               <option key={pareja.id} value={pareja.id}>
                 {getPairName(pareja)}
@@ -229,11 +229,11 @@ function AdminPartidos() {
           <input value={form.pista} onChange={(event) => updateField('pista', event.target.value)} />
         </label>
         <label>
-          Posición en bracket
+          Posicion en bracket
           <input
             type="number"
             min="1"
-            placeholder="1, 2, 3…"
+            placeholder="1, 2, 3..."
             value={form.orden}
             onChange={(event) => updateField('orden', event.target.value)}
           />
@@ -259,14 +259,14 @@ function AdminPartidos() {
                 min="0"
                 value={form[`set${setNumber}_a`]}
                 onChange={(event) => updateField(`set${setNumber}_a`, event.target.value)}
-                aria-label={`Set ${setNumber} pareja A`}
+                aria-label={`Set ${setNumber} participante A`}
               />
               <input
                 type="number"
                 min="0"
                 value={form[`set${setNumber}_b`]}
                 onChange={(event) => updateField(`set${setNumber}_b`, event.target.value)}
-                aria-label={`Set ${setNumber} pareja B`}
+                aria-label={`Set ${setNumber} participante B`}
               />
             </div>
           ))}
@@ -318,7 +318,7 @@ function AdminPartidos() {
             <div key={partido.id} className="data-row">
               <strong>{getPairName(parejaA)} vs {getPairName(parejaB)}</strong>
               <span>{categoriasMap.get(partido.categoria_id)?.nombre || 'Sin categoria'}</span>
-              <span>{partido.fecha || 'Sin fecha'} · {partido.hora?.slice(0, 5) || 'Sin hora'} · {partido.pista || 'Sin pista'}</span>
+              <span>{partido.fecha || 'Sin fecha'} - {partido.hora?.slice(0, 5) || 'Sin hora'} - {partido.pista || 'Sin pista'}</span>
               <span>{estados.find((estado) => estado.value === partido.estado)?.label || partido.estado}</span>
               <span>{ganadorPartido ? `Gana ${getPairName(ganadorPartido)}` : 'Sin ganador'}</span>
               <div className="row-actions">

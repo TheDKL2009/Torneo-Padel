@@ -12,7 +12,7 @@ function Home() {
   const proximosPartidos = partidos.filter((partido) => partido.estadoRaw === 'programado')
   const resumen = [
     { label: 'Categorias', value: categorias.length },
-    { label: 'Parejas', value: parejas.length },
+    { label: 'Participantes', value: parejas.length },
     { label: 'Partidos jugados', value: partidosJugados },
     { label: 'Proximos partidos', value: proximosPartidos.length },
   ]

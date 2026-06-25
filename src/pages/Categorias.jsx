@@ -22,7 +22,7 @@ function Categorias() {
               <CategoryCard
                 key={categoria.id}
                 category={categoria}
-                totalParejas={parejas.filter((pareja) => pareja.categoriaId === categoria.id).length}
+                totalParticipantes={parejas.filter((pareja) => pareja.categoriaId === categoria.id).length}
               />
             ))}
           </div>

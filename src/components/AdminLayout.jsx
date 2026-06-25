@@ -1,12 +1,14 @@
-import { Activity, LayoutDashboard, LayoutGrid, LogOut, Star, Users } from 'lucide-react'
+import { Activity, Layers, LayoutDashboard, LayoutGrid, LogOut, MapPin, Star, Users } from 'lucide-react'
 import { NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient.js'
 
 const adminLinks = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/categorias', label: 'Categorias', icon: LayoutGrid },
-  { to: '/admin/parejas', label: 'Parejas', icon: Users },
+  { to: '/admin/parejas', label: 'Participantes', icon: Users },
+  { to: '/admin/grupos', label: 'Grupos', icon: Layers },
   { to: '/admin/partidos', label: 'Partidos', icon: Activity },
+  { to: '/admin/pistas', label: 'Pistas', icon: MapPin },
   { to: '/admin/patrocinadores', label: 'Patrocinadores', icon: Star },
 ]
 

@@ -8,9 +8,16 @@ const emptyForm = {
   id: '',
   nombre: '',
   tipo: '',
+  modalidad: 'pareja',
   orden: 0,
   activo: true,
 }
+
+const modalidadOptions = [
+  { value: 'pareja', label: 'Pareja' },
+  { value: 'equipo', label: 'Equipo' },
+  { value: 'individual', label: 'Individual' },
+]
 
 function AdminCategorias() {
   const { categorias, loading, error, refresh } = useAdminData()
@@ -27,6 +34,7 @@ function AdminCategorias() {
       id: categoria.id,
       nombre: categoria.nombre,
       tipo: categoria.tipo,
+      modalidad: categoria.modalidad || 'pareja',
       orden: categoria.orden,
       activo: categoria.activo,
     })
@@ -75,8 +83,18 @@ function AdminCategorias() {
           <input value={form.nombre} onChange={(event) => updateField('nombre', event.target.value)} required />
         </label>
         <label>
-          Tipo
+          Tipo / nivel
           <input value={form.tipo} onChange={(event) => updateField('tipo', event.target.value)} required />
+        </label>
+        <label>
+          Modalidad
+          <select value={form.modalidad} onChange={(event) => updateField('modalidad', event.target.value)} required>
+            {modalidadOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
         <label>
           Orden
@@ -115,6 +133,7 @@ function AdminCategorias() {
           <div key={categoria.id} className="data-row">
             <strong>{categoria.nombre}</strong>
             <span>{categoria.tipo}</span>
+            <span>{modalidadOptions.find((option) => option.value === (categoria.modalidad || 'pareja'))?.label}</span>
             <span>Orden {categoria.orden}</span>
             <span className={categoria.activo ? 'status-text active' : 'status-text inactive'}>
               {categoria.activo ? 'Activa' : 'Inactiva'}

@@ -6,6 +6,10 @@ const initialData = {
   parejas: [],
   partidos: [],
   patrocinadores: [],
+  pistas: [],
+  grupos: [],
+  grupoParejas: [],
+  clasificacionesGrupo: [],
 }
 
 export function useAdminData() {

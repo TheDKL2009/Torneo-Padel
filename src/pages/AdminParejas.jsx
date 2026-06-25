@@ -9,29 +9,48 @@ const emptyForm = {
   categoria_id: '',
   jugador_1: '',
   jugador_2: '',
+  nombre_equipo: '',
+  jugadores: '',
   telefono: '',
   email: '',
   activo: true,
 }
 
+const modalidadLabels = {
+  pareja: 'Pareja',
+  equipo: 'Equipo',
+  individual: 'Individual',
+}
+
+function normalizeModalidad(value) {
+  return value === 'equipo' || value === 'individual' ? value : 'pareja'
+}
+
+function jugadoresToTextarea(value) {
+  return Array.isArray(value) ? value.join('\n') : ''
+}
+
 function exportarCSV(parejas, categoriasMap) {
-  const headers = ['Categoría', 'Jugador 1', 'Jugador 2', 'Teléfono', 'Email', 'Activo']
+  const headers = ['Categoria', 'Modalidad', 'Nombre', 'Jugador 1', 'Jugador 2', 'Nombre equipo', 'Telefono', 'Email', 'Activo']
   const rows = parejas.map((p) => [
     categoriasMap.get(p.categoria_id)?.nombre ?? '',
-    p.jugador_1,
-    p.jugador_2,
+    modalidadLabels[normalizeModalidad(p.tipo_participante)] ?? 'Pareja',
+    getPairName(p),
+    p.jugador_1 ?? '',
+    p.jugador_2 ?? '',
+    p.nombre_equipo ?? '',
     p.telefono ?? '',
     p.email ?? '',
-    p.activo ? 'Sí' : 'No',
+    p.activo ? 'Si' : 'No',
   ])
   const csv = [headers, ...rows]
     .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
     .join('\n')
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'parejas.csv'
+  a.download = 'participantes.csv'
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -48,14 +67,19 @@ function AdminParejas() {
     () => new Map(categorias.map((categoria) => [categoria.id, categoria])),
     [categorias],
   )
+  const selectedCategoria = categoriasMap.get(form.categoria_id)
+  const selectedModalidad = normalizeModalidad(selectedCategoria?.modalidad)
+  const hasSelectedCategoria = Boolean(form.categoria_id)
 
   const parejasFiltradas = useMemo(() => {
     const query = searchQuery.toLowerCase()
     return parejas
       .filter((pareja) => categoryFilter === 'todas' || pareja.categoria_id === categoryFilter)
       .filter((pareja) => !query ||
-        pareja.jugador_1.toLowerCase().includes(query) ||
-        pareja.jugador_2.toLowerCase().includes(query),
+        getPairName(pareja).toLowerCase().includes(query) ||
+        (pareja.jugador_1 || '').toLowerCase().includes(query) ||
+        (pareja.jugador_2 || '').toLowerCase().includes(query) ||
+        (pareja.nombre_equipo || '').toLowerCase().includes(query),
       )
   }, [categoryFilter, parejas, searchQuery])
 
@@ -63,12 +87,25 @@ function AdminParejas() {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
+  function updateCategoria(value) {
+    setForm((current) => ({
+      ...current,
+      categoria_id: value,
+      jugador_1: '',
+      jugador_2: '',
+      nombre_equipo: '',
+      jugadores: '',
+    }))
+  }
+
   function editPareja(pareja) {
     setForm({
       id: pareja.id,
       categoria_id: pareja.categoria_id,
-      jugador_1: pareja.jugador_1,
-      jugador_2: pareja.jugador_2,
+      jugador_1: pareja.jugador_1 || '',
+      jugador_2: pareja.jugador_2 || '',
+      nombre_equipo: pareja.nombre_equipo || '',
+      jugadores: jugadoresToTextarea(pareja.jugadores),
       telefono: pareja.telefono || '',
       email: pareja.email || '',
       activo: pareja.activo,
@@ -77,14 +114,35 @@ function AdminParejas() {
 
   async function handleSubmit(event) {
     event.preventDefault()
+
+    if (!form.categoria_id) {
+      setActionError('Selecciona una categoria.')
+      return
+    }
+
+    if (selectedModalidad === 'pareja' && (!form.jugador_1.trim() || !form.jugador_2.trim())) {
+      setActionError('Indica los dos jugadores de la pareja.')
+      return
+    }
+
+    if (selectedModalidad === 'individual' && !form.jugador_1.trim()) {
+      setActionError('Indica el jugador.')
+      return
+    }
+
+    if (selectedModalidad === 'equipo' && !form.nombre_equipo.trim()) {
+      setActionError('Indica el nombre del equipo.')
+      return
+    }
+
     setSaving(true)
     setActionError('')
 
     try {
-      await savePareja(form)
+      await savePareja({ ...form, tipo_participante: selectedModalidad })
       setForm(emptyForm)
       await refresh()
-      showToast('Pareja guardada correctamente')
+      showToast('Participante guardado correctamente')
     } catch (currentError) {
       setActionError(formatActionError(currentError))
     } finally {
@@ -96,16 +154,16 @@ function AdminParejas() {
     <div className="admin-page">
       <div className="section-heading">
         <p className="eyebrow">Gestion</p>
-        <h2>Parejas</h2>
+        <h2>Participantes</h2>
       </div>
 
       <form className="admin-form" onSubmit={handleSubmit}>
-        <h3>{form.id ? 'Editar pareja' : 'Crear pareja'}</h3>
+        <h3>{form.id ? 'Editar participante' : 'Crear participante'}</h3>
         <label>
           Categoria
           <select
             value={form.categoria_id}
-            onChange={(event) => updateField('categoria_id', event.target.value)}
+            onChange={(event) => updateCategoria(event.target.value)}
             required
           >
             <option value="">Selecciona categoria</option>
@@ -116,14 +174,50 @@ function AdminParejas() {
             ))}
           </select>
         </label>
-        <label>
-          Jugador 1
-          <input value={form.jugador_1} onChange={(event) => updateField('jugador_1', event.target.value)} required />
-        </label>
-        <label>
-          Jugador 2
-          <input value={form.jugador_2} onChange={(event) => updateField('jugador_2', event.target.value)} required />
-        </label>
+        {hasSelectedCategoria && (
+          <p className="form-full info-state">Modalidad: {modalidadLabels[selectedModalidad]}</p>
+        )}
+        {hasSelectedCategoria && selectedModalidad === 'equipo' ? (
+          <>
+            <label>
+              Nombre del equipo
+              <input
+                value={form.nombre_equipo}
+                onChange={(event) => updateField('nombre_equipo', event.target.value)}
+                required
+              />
+            </label>
+            <label className="form-full">
+              Jugadores
+              <textarea
+                value={form.jugadores}
+                onChange={(event) => updateField('jugadores', event.target.value)}
+                placeholder="Un jugador por linea"
+              />
+            </label>
+          </>
+        ) : hasSelectedCategoria ? (
+          <>
+            <label>
+              Jugador 1
+              <input
+                value={form.jugador_1}
+                onChange={(event) => updateField('jugador_1', event.target.value)}
+                required
+              />
+            </label>
+            {selectedModalidad === 'pareja' && (
+              <label>
+                Jugador 2
+                <input
+                  value={form.jugador_2}
+                  onChange={(event) => updateField('jugador_2', event.target.value)}
+                  required
+                />
+              </label>
+            )}
+          </>
+        ) : null}
         <label>
           Telefono
           <input value={form.telefono} onChange={(event) => updateField('telefono', event.target.value)} />
@@ -155,11 +249,11 @@ function AdminParejas() {
 
       <div className="filters">
         <label>
-          Buscar jugador
+          Buscar participante
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Nombre del jugador..."
+            placeholder="Nombre..."
           />
         </label>
         <label>
@@ -175,7 +269,7 @@ function AdminParejas() {
         </label>
       </div>
 
-      {loading && <p className="info-state">Cargando parejas...</p>}
+      {loading && <p className="info-state">Cargando participantes...</p>}
       {error && <p className="error-state">{error}</p>}
 
       {!loading && parejas.length > 0 && (
@@ -195,6 +289,7 @@ function AdminParejas() {
           <div key={pareja.id} className="data-row">
             <strong>{getPairName(pareja)}</strong>
             <span>{categoriasMap.get(pareja.categoria_id)?.nombre || 'Sin categoria'}</span>
+            <span>{modalidadLabels[normalizeModalidad(pareja.tipo_participante)]}</span>
             <span>{pareja.email || pareja.telefono || 'Sin contacto'}</span>
             <span className={pareja.activo ? 'status-text active' : 'status-text inactive'}>
               {pareja.activo ? 'Activa' : 'Inactiva'}

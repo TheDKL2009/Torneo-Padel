@@ -475,6 +475,68 @@ textarea {
   gap: 24px;
 }
 
+.category-tabs {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.category-tab {
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  flex: 0 0 auto;
+  gap: 2px;
+  min-width: 150px;
+  padding: 10px 12px;
+  text-align: left;
+  transition: border-color 160ms, box-shadow 160ms, color 160ms;
+}
+
+.category-tab:hover,
+.category-tab.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26, 107, 74, 0.1);
+  color: var(--primary-dark);
+}
+
+.category-tab span {
+  font-weight: 900;
+}
+
+.category-tab small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.compact-heading {
+  gap: 2px;
+}
+
+.compact-heading h3 {
+  font-size: 1.35rem;
+}
+
+.groups-stage,
+.elimination-stage {
+  display: grid;
+  gap: 16px;
+}
+
+.public-groups-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
 /* ── Bracket (scoreboard style) ────────────────────────────── */
 
 .bracket-section {
@@ -674,6 +736,77 @@ textarea {
   width: 100%;
 }
 
+.inscription-page {
+  display: grid;
+  gap: 24px;
+}
+
+.inscription-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 20px;
+}
+
+.inscription-form label {
+  color: var(--muted);
+  display: grid;
+  font-weight: 800;
+  gap: 8px;
+}
+
+.inscription-form input[aria-invalid="true"],
+.inscription-form select[aria-invalid="true"],
+.inscription-form textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.inscription-success {
+  align-items: start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--primary-dark);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: auto 1fr;
+  padding: 24px;
+}
+
+.inscription-success h2 {
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.inscription-success p {
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.sr-only {
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .admin-layout {
   display: grid;
   grid-template-columns: 260px 1fr;
@@ -796,6 +929,246 @@ textarea {
   background: var(--surface-muted);
 }
 
+.groups-list {
+  display: grid;
+  gap: 18px;
+}
+
+.group-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.group-panel__header {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding-bottom: 14px;
+}
+
+.group-panel__header h3 {
+  font-size: 1.2rem;
+}
+
+.group-teams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.group-teams span {
+  align-items: center;
+  background: var(--primary-bg);
+  border: 1px solid rgba(26, 107, 74, 0.18);
+  border-radius: 8px;
+  color: var(--primary-dark);
+  display: inline-flex;
+  font-size: 0.88rem;
+  font-weight: 800;
+  gap: 8px;
+  max-width: 100%;
+  padding: 7px 8px 7px 10px;
+}
+
+.inline-action {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(26, 107, 74, 0.18);
+  border-radius: 6px;
+  color: var(--primary-dark);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 900;
+  min-height: 26px;
+  padding: 3px 7px;
+}
+
+.inline-action:hover {
+  background: #fff;
+  border-color: var(--border-strong);
+}
+
+.standings-table {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.standings-row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 44px minmax(180px, 1.8fr) repeat(7, minmax(46px, 0.55fr));
+  min-height: 42px;
+  padding: 9px 12px;
+}
+
+.standings-row:nth-child(odd):not(.standings-head) {
+  background: var(--surface-muted);
+}
+
+.standings-head {
+  background: var(--primary-dark);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.standings-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.standings-row span:not(:nth-child(2)),
+.standings-row strong + span {
+  font-variant-numeric: tabular-nums;
+}
+
+.standings-row.qualified {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.group-standings .standings-row {
+  grid-template-columns: 44px minmax(150px, 1.8fr) repeat(8, minmax(42px, 0.5fr));
+}
+
+.standings-row-button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.standings-row-button:hover,
+.standings-row-button.selected {
+  background: var(--primary-bg);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.group-matches {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+}
+
+.group-matches h4 {
+  color: var(--primary-dark);
+  font-size: 1rem;
+}
+
+.group-match-list {
+  display: grid;
+  gap: 8px;
+}
+
+.group-match-row {
+  align-items: center;
+  background: var(--surface-muted);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  min-height: 44px;
+  padding: 8px;
+}
+
+.group-match-team {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-width: 0;
+  overflow: hidden;
+  padding: 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-match-team:hover,
+.group-match-team.selected {
+  background: #fff;
+  color: var(--primary-dark);
+}
+
+.group-match-team:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.group-match-score {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--primary-dark);
+  font-size: 0.84rem;
+  font-weight: 900;
+  min-width: 78px;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.preview-bracket {
+  display: grid;
+  gap: 12px;
+}
+
+.preview-match-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.preview-match {
+  align-items: center;
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  padding: 12px;
+}
+
+.preview-match span {
+  font-weight: 800;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-match span:last-child {
+  text-align: right;
+}
+
+.preview-match strong {
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+}
+
+.compact-match-card {
+  box-shadow: var(--shadow-sm);
+  gap: 10px;
+  padding: 14px;
+}
+
 .status-text {
   font-weight: 900;
 }
@@ -836,9 +1209,34 @@ textarea {
 
   .data-row,
   .admin-table .data-row,
+  .standings-row,
+  .inscription-form,
   .admin-form,
   .admin-form.wide {
     grid-template-columns: 1fr;
+  }
+
+  .standings-head {
+    display: none;
+  }
+
+  .standings-row {
+    align-items: start;
+    gap: 4px;
+  }
+
+  .group-standings .standings-row {
+    grid-template-columns: 1fr;
+  }
+
+  .group-match-row,
+  .preview-match {
+    grid-template-columns: 1fr;
+  }
+
+  .group-match-score,
+  .preview-match span:last-child {
+    text-align: left;
   }
 }
 

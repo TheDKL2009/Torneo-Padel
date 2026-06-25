@@ -1,4 +1,4 @@
-import { Activity, Calendar, Home, LayoutGrid, Network, ShieldCheck, Star } from 'lucide-react'
+import { Activity, Calendar, Home, LayoutGrid, Network, Send, ShieldCheck, Star } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const publicLinks = [
@@ -8,6 +8,7 @@ const publicLinks = [
   { to: '/partidos', label: 'Partidos', icon: Activity },
   { to: '/horarios', label: 'Horarios', icon: Calendar },
   { to: '/patrocinadores', label: 'Patrocinadores', icon: Star },
+  // { to: '/inscripcion', label: 'Inscribirme', icon: Send }, Inscripciones deshabilitadas temporalmente
 ]
 
 function Navbar() {

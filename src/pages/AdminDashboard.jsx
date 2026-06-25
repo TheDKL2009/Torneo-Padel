@@ -1,11 +1,13 @@
 import { useAdminData } from '../hooks/useAdminData.js'
 
 function AdminDashboard() {
-  const { categorias, parejas, partidos, patrocinadores, loading, error } = useAdminData()
+  const { categorias, parejas, partidos, patrocinadores, pistas, grupos, loading, error } = useAdminData()
   const stats = [
     { label: 'Categorias', value: categorias.length },
-    { label: 'Parejas', value: parejas.length },
+    { label: 'Participantes', value: parejas.length },
+    { label: 'Grupos', value: grupos.length },
     { label: 'Partidos', value: partidos.length },
+    { label: 'Pistas', value: pistas.length },
     { label: 'Patrocinadores', value: patrocinadores.length },
   ]
 

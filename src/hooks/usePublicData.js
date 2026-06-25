@@ -5,6 +5,8 @@ const initialData = {
   categorias: [],
   parejas: [],
   partidos: [],
+  grupos: [],
+  grupoParejas: [],
   patrocinadores: [],
 }
 
