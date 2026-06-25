@@ -5,10 +5,11 @@ import { supabase } from '../services/supabaseClient.js'
 function ProtectedRoute() {
   const location = useLocation()
   const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(Boolean(supabase))
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!supabase) {
+      setLoading(false)
       return
     }
 
@@ -38,6 +39,10 @@ function ProtectedRoute() {
 
   if (loading) {
     return <p className="info-state">Comprobando sesion...</p>
+  }
+
+  if (!supabase) {
+    return <p className="error-state">Error de configuración: faltan VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY.</p>
   }
 
   if (!session) {

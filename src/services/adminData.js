@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js'
 
-const matchSelect = 'id,categoria_id,ronda,pareja_a_id,pareja_b_id,ganador_id,fecha,hora,pista,estado,set1_a,set1_b,set2_a,set2_b,set3_a,set3_b,observaciones,created_at'
+const matchSelect = 'id,categoria_id,ronda,pareja_a_id,pareja_b_id,ganador_id,fecha,hora,pista,estado,set1_a,set1_b,set2_a,set2_b,set3_a,set3_b,observaciones,orden,created_at'
 
 function ensureSupabase() {
   if (!supabase) {
@@ -27,7 +27,7 @@ export function calculateWinnerId(match) {
     [toNullableNumber(match.set1_a), toNullableNumber(match.set1_b)],
     [toNullableNumber(match.set2_a), toNullableNumber(match.set2_b)],
     [toNullableNumber(match.set3_a), toNullableNumber(match.set3_b)],
-  ].filter(([a, b]) => a !== null && b !== null && a !== b)
+  ].filter(([a, b]) => a !== null && b !== null)
 
   const wins = sets.reduce(
     (total, [a, b]) => ({
@@ -64,6 +64,7 @@ export async function fetchAdminData() {
     supabase
       .from('partidos')
       .select(matchSelect)
+      .order('orden', { ascending: true, nullsFirst: false })
       .order('fecha', { ascending: true, nullsFirst: false })
       .order('hora', { ascending: true, nullsFirst: false }),
     supabase
@@ -147,6 +148,7 @@ export async function savePartido(form) {
     hora: form.hora || null,
     pista: form.pista.trim() || null,
     estado: form.estado,
+    orden: toNullableNumber(form.orden),
     set1_a: toNullableNumber(form.set1_a),
     set1_b: toNullableNumber(form.set1_b),
     set2_a: toNullableNumber(form.set2_a),

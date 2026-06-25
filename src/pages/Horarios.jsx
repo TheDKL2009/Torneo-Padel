@@ -1,4 +1,5 @@
-import { usePublicData } from '../services/usePublicData.js'
+import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
+import { usePublicData } from '../hooks/usePublicData.js'
 
 function groupSchedule(items) {
   return items.reduce((days, partido) => {
@@ -16,6 +17,7 @@ function groupSchedule(items) {
 }
 
 function Horarios() {
+  useDocumentTitle('Horarios')
   const { partidos, loading, error } = usePublicData()
   const agenda = groupSchedule(partidos)
 

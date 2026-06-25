@@ -1,7 +1,10 @@
+import SkeletonGrid from '../components/SkeletonGrid.jsx'
 import SponsorCard from '../components/SponsorCard.jsx'
-import { usePublicData } from '../services/usePublicData.js'
+import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
+import { usePublicData } from '../hooks/usePublicData.js'
 
 function Patrocinadores() {
+  useDocumentTitle('Patrocinadores')
   const { patrocinadores, loading, error } = usePublicData()
 
   return (
@@ -10,13 +13,17 @@ function Patrocinadores() {
         <p className="eyebrow">Patrocinadores</p>
         <h2>Colaboradores oficiales</h2>
       </div>
-      {loading && <p className="info-state">Cargando patrocinadores...</p>}
       {error && <p className="error-state">{error.message}</p>}
-      <div className="sponsor-grid">
-        {patrocinadores.map((patrocinador) => (
-          <SponsorCard key={patrocinador.id} sponsor={patrocinador} />
-        ))}
-      </div>
+      {loading
+        ? <SkeletonGrid count={3} className="sponsor-grid" />
+        : (
+          <div className="sponsor-grid">
+            {patrocinadores.map((patrocinador) => (
+              <SponsorCard key={patrocinador.id} sponsor={patrocinador} />
+            ))}
+          </div>
+        )
+      }
     </section>
   )
 }

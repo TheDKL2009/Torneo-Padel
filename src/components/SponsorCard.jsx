@@ -8,11 +8,14 @@ function SponsorCard({ sponsor }) {
   return (
     <article className="sponsor-card">
       <div className="sponsor-card__logo" aria-hidden="true">
-        {sponsor.logoUrl ? <img src={sponsor.logoUrl} alt="" /> : initials}
+        {sponsor.logoUrl
+          ? <img src={sponsor.logoUrl} alt="" loading="lazy" width={66} height={42} />
+          : initials
+        }
       </div>
-      <p className="eyebrow">{sponsor.categoria}</p>
+      {sponsor.categoria && <p className="eyebrow">{sponsor.categoria}</p>}
       <h3>{sponsor.nombre}</h3>
-      <p>{sponsor.descripcion}</p>
+      {sponsor.descripcion && <p>{sponsor.descripcion}</p>}
       {sponsor.web && (
         <a href={sponsor.web} target="_blank" rel="noreferrer">
           Visitar web

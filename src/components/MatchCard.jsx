@@ -1,24 +1,34 @@
 function MatchCard({ match }) {
-  const statusClass = match.estado.toLowerCase().replaceAll(' ', '-')
-  const parejaA = match.parejaA?.nombre || 'Pareja A pendiente'
-  const parejaB = match.parejaB?.nombre || 'Pareja B pendiente'
+  const statusClass = match.estadoRaw.replaceAll('_', '-')
+  const parejaA = match.parejaA?.nombre || 'Por definir'
+  const parejaB = match.parejaB?.nombre || 'Por definir'
+  const isWinnerA = match.ganadorId && match.ganadorId === match.parejaAId
+  const isWinnerB = match.ganadorId && match.ganadorId === match.parejaBId
 
   return (
     <article className="match-card">
-      <div className="match-card__top">
+      <div className="match-card__header">
+        <span className="match-card__round">{match.ronda}</span>
         <span className={`status-pill ${statusClass}`}>{match.estado}</span>
-        <span>{match.ronda}</span>
       </div>
-      <h3>
-        {parejaA} <span>vs</span> {parejaB}
-      </h3>
+
+      <div className="match-card__teams">
+        <span className={`match-card__team${isWinnerA ? ' winner' : ''}`}>{parejaA}</span>
+        <span className="match-card__vs">vs</span>
+        <span className={`match-card__team${isWinnerB ? ' winner' : ''}`}>{parejaB}</span>
+      </div>
+
+      {match.marcador
+        ? <p className="match-card__score">{match.marcador}</p>
+        : <p className="match-card__score pending">Pendiente de disputar</p>
+      }
+
       <div className="match-card__meta">
-        <span>{match.categoria?.nombre}</span>
-        <span>{match.fecha}</span>
-        <span>{match.hora}</span>
-        <span>{match.pista}</span>
+        {match.categoria?.nombre && <span>{match.categoria.nombre}</span>}
+        {match.fecha !== 'Sin fecha' && <span>{match.fecha}</span>}
+        {match.hora !== 'Sin hora' && <span>{match.hora}</span>}
+        {match.pista !== 'Sin pista' && <span>{match.pista}</span>}
       </div>
-      <p className="match-card__score">{match.marcador || 'Pendiente de disputar'}</p>
     </article>
   )
 }

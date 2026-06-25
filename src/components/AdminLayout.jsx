@@ -1,12 +1,13 @@
+import { Activity, LayoutDashboard, LayoutGrid, LogOut, Star, Users } from 'lucide-react'
 import { NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient.js'
 
 const adminLinks = [
-  { to: '/admin', label: 'Dashboard', end: true },
-  { to: '/admin/categorias', label: 'Categorias' },
-  { to: '/admin/parejas', label: 'Parejas' },
-  { to: '/admin/partidos', label: 'Partidos' },
-  { to: '/admin/patrocinadores', label: 'Patrocinadores' },
+  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/admin/categorias', label: 'Categorias', icon: LayoutGrid },
+  { to: '/admin/parejas', label: 'Parejas', icon: Users },
+  { to: '/admin/partidos', label: 'Partidos', icon: Activity },
+  { to: '/admin/patrocinadores', label: 'Patrocinadores', icon: Star },
 ]
 
 function AdminLayout() {
@@ -27,18 +28,20 @@ function AdminLayout() {
           <p className="admin-user">{session.user.email}</p>
         </div>
         <nav aria-label="Menu de administracion">
-          {adminLinks.map((link) => (
+          {adminLinks.map(({ to, label, icon: Icon, end }) => (
             <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.end}
+              key={to}
+              to={to}
+              end={end}
               className={({ isActive }) => (isActive ? 'admin-nav active' : 'admin-nav')}
             >
-              {link.label}
+              <Icon size={15} aria-hidden="true" />
+              {label}
             </NavLink>
           ))}
         </nav>
         <button type="button" className="ghost-button" onClick={handleLogout}>
+          <LogOut size={15} aria-hidden="true" />
           Cerrar sesion
         </button>
       </aside>

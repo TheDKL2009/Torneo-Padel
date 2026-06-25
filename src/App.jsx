@@ -1,5 +1,7 @@
+import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Header from './components/Header.jsx'
+import Toast from './components/Toast.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AdminLayout from './components/AdminLayout.jsx'
 import Home from './pages/Home.jsx'
@@ -9,12 +11,13 @@ import Partidos from './pages/Partidos.jsx'
 import Horarios from './pages/Horarios.jsx'
 import Patrocinadores from './pages/Patrocinadores.jsx'
 import Login from './pages/Login.jsx'
-import AdminDashboard from './pages/AdminDashboard.jsx'
-import AdminCategorias from './pages/AdminCategorias.jsx'
-import AdminParejas from './pages/AdminParejas.jsx'
-import AdminPartidos from './pages/AdminPartidos.jsx'
-import AdminPatrocinadores from './pages/AdminPatrocinadores.jsx'
 import './styles/main.css'
+
+const AdminDashboard      = lazy(() => import('./pages/AdminDashboard.jsx'))
+const AdminCategorias     = lazy(() => import('./pages/AdminCategorias.jsx'))
+const AdminParejas        = lazy(() => import('./pages/AdminParejas.jsx'))
+const AdminPartidos       = lazy(() => import('./pages/AdminPartidos.jsx'))
+const AdminPatrocinadores = lazy(() => import('./pages/AdminPatrocinadores.jsx'))
 
 function App() {
   return (
@@ -31,7 +34,7 @@ function App() {
           <Route path="/login" element={<Navigate to="/admin/login" replace />} />
           <Route path="/admin/login" element={<Login />} />
 
-          <Route element={<ProtectedRoute />}>
+          <Route element={<Suspense fallback={<p className="info-state">Cargando panel...</p>}><ProtectedRoute /></Suspense>}>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="categorias" element={<AdminCategorias />} />
@@ -44,6 +47,7 @@ function App() {
           <Route path="*" element={<Home />} />
         </Routes>
       </main>
+      <Toast />
     </div>
   )
 }

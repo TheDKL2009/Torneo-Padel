@@ -1,7 +1,10 @@
 import CategoryCard from '../components/CategoryCard.jsx'
-import { usePublicData } from '../services/usePublicData.js'
+import SkeletonGrid from '../components/SkeletonGrid.jsx'
+import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
+import { usePublicData } from '../hooks/usePublicData.js'
 
 function Categorias() {
+  useDocumentTitle('Categorias')
   const { categorias, parejas, loading, error } = usePublicData()
 
   return (
@@ -10,17 +13,21 @@ function Categorias() {
         <p className="eyebrow">Categorias</p>
         <h2>Modalidades del torneo</h2>
       </div>
-      {loading && <p className="info-state">Cargando categorias...</p>}
       {error && <p className="error-state">{error.message}</p>}
-      <div className="category-grid">
-        {categorias.map((categoria) => (
-          <CategoryCard
-            key={categoria.id}
-            category={categoria}
-            totalParejas={parejas.filter((pareja) => pareja.categoriaId === categoria.id).length}
-          />
-        ))}
-      </div>
+      {loading
+        ? <SkeletonGrid count={6} className="category-grid" />
+        : (
+          <div className="category-grid">
+            {categorias.map((categoria) => (
+              <CategoryCard
+                key={categoria.id}
+                category={categoria}
+                totalParejas={parejas.filter((pareja) => pareja.categoriaId === categoria.id).length}
+              />
+            ))}
+          </div>
+        )
+      }
     </section>
   )
 }

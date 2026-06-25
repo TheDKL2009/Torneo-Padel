@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { savePatrocinador, togglePatrocinador } from '../services/adminData.js'
-import { useAdminData } from '../services/useAdminData.js'
+import { useAdminData } from '../hooks/useAdminData.js'
+import { showToast } from '../hooks/useToast.js'
+import { formatActionError } from '../utils/errors.js'
 
 const emptyForm = {
   id: '',
@@ -41,8 +43,9 @@ function AdminPatrocinadores() {
       await savePatrocinador(form)
       setForm(emptyForm)
       await refresh()
+      showToast('Patrocinador guardado correctamente')
     } catch (currentError) {
-      setActionError(currentError.message)
+      setActionError(formatActionError(currentError))
     } finally {
       setSaving(false)
     }
@@ -54,8 +57,9 @@ function AdminPatrocinadores() {
     try {
       await togglePatrocinador(patrocinador.id, !patrocinador.activo)
       await refresh()
+      showToast('Estado actualizado')
     } catch (currentError) {
-      setActionError(currentError.message)
+      setActionError(formatActionError(currentError))
     }
   }
 

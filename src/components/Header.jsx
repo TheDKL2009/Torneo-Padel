@@ -1,10 +1,5 @@
+import { torneo } from '../config/torneo.js'
 import Navbar from './Navbar.jsx'
-
-const torneo = {
-  nombre: 'Torneo Ciudad del Padel',
-  sede: 'Club Deportivo La Ribera',
-  fechas: '10 - 16 junio 2026',
-}
 
 function Header() {
   return (

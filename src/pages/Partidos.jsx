@@ -1,13 +1,35 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import MatchCard from '../components/MatchCard.jsx'
-import { usePublicData } from '../services/usePublicData.js'
+import SkeletonGrid from '../components/SkeletonGrid.jsx'
+import { useDocumentTitle } from '../hooks/useDocumentTitle.js'
+import { usePublicData } from '../hooks/usePublicData.js'
 
 const estados = ['Todos', 'Pendiente', 'Programado', 'En juego', 'Finalizado', 'Cancelado']
 
 function Partidos() {
+  useDocumentTitle('Partidos')
   const { categorias, partidos, loading, error } = usePublicData()
-  const [categoriaId, setCategoriaId] = useState('todas')
-  const [estado, setEstado] = useState('Todos')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const categoriaId = searchParams.get('categoria') ?? 'todas'
+  const estado = searchParams.get('estado') ?? 'Todos'
+
+  function setCategoriaId(val) {
+    setSearchParams((prev) => {
+      if (val === 'todas') prev.delete('categoria')
+      else prev.set('categoria', val)
+      return prev
+    }, { replace: true })
+  }
+
+  function setEstado(val) {
+    setSearchParams((prev) => {
+      if (val === 'Todos') prev.delete('estado')
+      else prev.set('estado', val)
+      return prev
+    }, { replace: true })
+  }
 
   const partidosFiltrados = useMemo(() => {
     return partidos
@@ -42,14 +64,18 @@ function Partidos() {
         </label>
       </div>
 
-      {loading && <p className="info-state">Cargando partidos...</p>}
       {error && <p className="error-state">{error.message}</p>}
 
-      <div className="match-grid">
-        {partidosFiltrados.map((partido) => (
-          <MatchCard key={partido.id} match={partido} />
-        ))}
-      </div>
+      {loading
+        ? <SkeletonGrid count={6} className="match-grid" />
+        : (
+          <div className="match-grid">
+            {partidosFiltrados.map((partido) => (
+              <MatchCard key={partido.id} match={partido} />
+            ))}
+          </div>
+        )
+      }
     </section>
   )
 }

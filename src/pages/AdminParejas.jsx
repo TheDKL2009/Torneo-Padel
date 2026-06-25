@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { getPairName, savePareja } from '../services/adminData.js'
-import { useAdminData } from '../services/useAdminData.js'
+import { useAdminData } from '../hooks/useAdminData.js'
+import { showToast } from '../hooks/useToast.js'
+import { formatActionError } from '../utils/errors.js'
 
 const emptyForm = {
   id: '',
@@ -12,10 +14,33 @@ const emptyForm = {
   activo: true,
 }
 
+function exportarCSV(parejas, categoriasMap) {
+  const headers = ['Categoría', 'Jugador 1', 'Jugador 2', 'Teléfono', 'Email', 'Activo']
+  const rows = parejas.map((p) => [
+    categoriasMap.get(p.categoria_id)?.nombre ?? '',
+    p.jugador_1,
+    p.jugador_2,
+    p.telefono ?? '',
+    p.email ?? '',
+    p.activo ? 'Sí' : 'No',
+  ])
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'parejas.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 function AdminParejas() {
   const { categorias, parejas, loading, error, refresh } = useAdminData()
   const [form, setForm] = useState(emptyForm)
   const [categoryFilter, setCategoryFilter] = useState('todas')
+  const [searchQuery, setSearchQuery] = useState('')
   const [saving, setSaving] = useState(false)
   const [actionError, setActionError] = useState('')
 
@@ -25,8 +50,14 @@ function AdminParejas() {
   )
 
   const parejasFiltradas = useMemo(() => {
-    return parejas.filter((pareja) => categoryFilter === 'todas' || pareja.categoria_id === categoryFilter)
-  }, [categoryFilter, parejas])
+    const query = searchQuery.toLowerCase()
+    return parejas
+      .filter((pareja) => categoryFilter === 'todas' || pareja.categoria_id === categoryFilter)
+      .filter((pareja) => !query ||
+        pareja.jugador_1.toLowerCase().includes(query) ||
+        pareja.jugador_2.toLowerCase().includes(query),
+      )
+  }, [categoryFilter, parejas, searchQuery])
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -53,8 +84,9 @@ function AdminParejas() {
       await savePareja(form)
       setForm(emptyForm)
       await refresh()
+      showToast('Pareja guardada correctamente')
     } catch (currentError) {
-      setActionError(currentError.message)
+      setActionError(formatActionError(currentError))
     } finally {
       setSaving(false)
     }
@@ -123,6 +155,14 @@ function AdminParejas() {
 
       <div className="filters">
         <label>
+          Buscar jugador
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Nombre del jugador..."
+          />
+        </label>
+        <label>
           Filtrar por categoria
           <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
             <option value="todas">Todas</option>
@@ -137,6 +177,18 @@ function AdminParejas() {
 
       {loading && <p className="info-state">Cargando parejas...</p>}
       {error && <p className="error-state">{error}</p>}
+
+      {!loading && parejas.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => exportarCSV(parejas, categoriasMap)}
+          >
+            Exportar CSV
+          </button>
+        </div>
+      )}
 
       <div className="data-table admin-table">
         {parejasFiltradas.map((pareja) => (

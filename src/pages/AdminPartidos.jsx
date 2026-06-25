@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { calculateWinnerId, getPairName, savePartido } from '../services/adminData.js'
-import { useAdminData } from '../services/useAdminData.js'
+import { useAdminData } from '../hooks/useAdminData.js'
+import { showToast } from '../hooks/useToast.js'
+import { formatActionError } from '../utils/errors.js'
 
 const estados = [
   { value: 'pendiente', label: 'Pendiente' },
@@ -27,10 +29,42 @@ const emptyForm = {
   set3_a: '',
   set3_b: '',
   observaciones: '',
+  orden: '',
 }
 
 function toFieldValue(value) {
   return value === null || value === undefined ? '' : value
+}
+
+function exportarCSV(partidos, parejasMap, categoriasMap) {
+  const headers = ['Categoría', 'Ronda', 'Pareja A', 'Pareja B', 'Fecha', 'Hora', 'Pista', 'Estado', 'Set 1', 'Set 2', 'Set 3', 'Ganador']
+  const rows = partidos.map((p) => {
+    const set = (a, b) => a !== null && b !== null ? `${a}-${b}` : ''
+    return [
+      categoriasMap.get(p.categoria_id)?.nombre ?? '',
+      p.ronda ?? '',
+      getPairName(parejasMap.get(p.pareja_a_id)),
+      getPairName(parejasMap.get(p.pareja_b_id)),
+      p.fecha ?? '',
+      p.hora?.slice(0, 5) ?? '',
+      p.pista ?? '',
+      p.estado ?? '',
+      set(p.set1_a, p.set1_b),
+      set(p.set2_a, p.set2_b),
+      set(p.set3_a, p.set3_b),
+      getPairName(parejasMap.get(p.ganador_id)),
+    ]
+  })
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'partidos.csv'
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 function AdminPartidos() {
@@ -48,11 +82,22 @@ function AdminPartidos() {
     [parejas],
   )
 
-  const parejasDisponibles = useMemo(() => {
-    return parejas.filter((pareja) => !form.categoria_id || pareja.categoria_id === form.categoria_id)
-  }, [form.categoria_id, parejas])
+  const parejasBase = useMemo(
+    () => parejas.filter((pareja) => !form.categoria_id || pareja.categoria_id === form.categoria_id),
+    [form.categoria_id, parejas],
+  )
 
-  const ganadorId = calculateWinnerId(form)
+  const parejasParaA = useMemo(
+    () => parejasBase.filter((pareja) => pareja.id !== form.pareja_b_id),
+    [parejasBase, form.pareja_b_id],
+  )
+
+  const parejasParaB = useMemo(
+    () => parejasBase.filter((pareja) => pareja.id !== form.pareja_a_id),
+    [parejasBase, form.pareja_a_id],
+  )
+
+  const ganadorId = useMemo(() => calculateWinnerId(form), [form])
   const ganador = parejasMap.get(ganadorId)
 
   function updateField(field, value) {
@@ -69,6 +114,12 @@ function AdminPartidos() {
   }
 
   function editPartido(partido) {
+    if (
+      partido.estado === 'finalizado' &&
+      !window.confirm('Este partido ya está finalizado. ¿Editar igualmente?')
+    ) {
+      return
+    }
     setForm({
       id: partido.id,
       categoria_id: partido.categoria_id,
@@ -86,11 +137,24 @@ function AdminPartidos() {
       set3_a: toFieldValue(partido.set3_a),
       set3_b: toFieldValue(partido.set3_b),
       observaciones: partido.observaciones || '',
+      orden: toFieldValue(partido.orden),
     })
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
+    if (!form.categoria_id) {
+      setActionError('Selecciona una categoría.')
+      return
+    }
+    if (!form.ronda.trim()) {
+      setActionError('Indica la ronda.')
+      return
+    }
+    if (form.pareja_a_id && form.pareja_a_id === form.pareja_b_id) {
+      setActionError('Las dos parejas deben ser distintas.')
+      return
+    }
     setSaving(true)
     setActionError('')
 
@@ -98,8 +162,9 @@ function AdminPartidos() {
       await savePartido(form)
       setForm(emptyForm)
       await refresh()
+      showToast('Partido guardado correctamente')
     } catch (currentError) {
-      setActionError(currentError.message)
+      setActionError(formatActionError(currentError))
     } finally {
       setSaving(false)
     }
@@ -133,7 +198,7 @@ function AdminPartidos() {
           Pareja A
           <select value={form.pareja_a_id} onChange={(event) => updateField('pareja_a_id', event.target.value)} required>
             <option value="">Selecciona pareja</option>
-            {parejasDisponibles.map((pareja) => (
+            {parejasParaA.map((pareja) => (
               <option key={pareja.id} value={pareja.id}>
                 {getPairName(pareja)}
               </option>
@@ -144,7 +209,7 @@ function AdminPartidos() {
           Pareja B
           <select value={form.pareja_b_id} onChange={(event) => updateField('pareja_b_id', event.target.value)} required>
             <option value="">Selecciona pareja</option>
-            {parejasDisponibles.map((pareja) => (
+            {parejasParaB.map((pareja) => (
               <option key={pareja.id} value={pareja.id}>
                 {getPairName(pareja)}
               </option>
@@ -162,6 +227,16 @@ function AdminPartidos() {
         <label>
           Pista
           <input value={form.pista} onChange={(event) => updateField('pista', event.target.value)} />
+        </label>
+        <label>
+          Posición en bracket
+          <input
+            type="number"
+            min="1"
+            placeholder="1, 2, 3…"
+            value={form.orden}
+            onChange={(event) => updateField('orden', event.target.value)}
+          />
         </label>
         <label>
           Estado
@@ -220,6 +295,18 @@ function AdminPartidos() {
 
       {loading && <p className="info-state">Cargando partidos...</p>}
       {error && <p className="error-state">{error}</p>}
+
+      {!loading && partidos.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => exportarCSV(partidos, parejasMap, categoriasMap)}
+          >
+            Exportar CSV
+          </button>
+        </div>
+      )}
 
       <div className="data-table admin-table">
         {partidos.map((partido) => {

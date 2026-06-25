@@ -1,4 +1,4 @@
-import { useAdminData } from '../services/useAdminData.js'
+import { useAdminData } from '../hooks/useAdminData.js'
 
 function AdminDashboard() {
   const { categorias, parejas, partidos, patrocinadores, loading, error } = useAdminData()

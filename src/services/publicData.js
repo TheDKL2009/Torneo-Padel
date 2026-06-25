@@ -37,7 +37,6 @@ function normalizeCategoria(categoria) {
     id: categoria.id,
     nombre: categoria.nombre,
     nivel: categoria.tipo,
-    descripcion: `Categoria ${categoria.tipo}`,
     orden: categoria.orden,
   }
 }
@@ -55,12 +54,19 @@ function normalizePareja(pareja, categoriaMap) {
 function normalizePartido(partido, categoriaMap, parejaMap) {
   const estado = estadoLabels[partido.estado] || partido.estado
 
+  const validSets = [
+    [partido.set1_a, partido.set1_b],
+    [partido.set2_a, partido.set2_b],
+    [partido.set3_a, partido.set3_b],
+  ].filter(([a, b]) => a !== null && b !== null)
+
   return {
     id: partido.id,
     categoriaId: partido.categoria_id,
     parejaAId: partido.pareja_a_id,
     parejaBId: partido.pareja_b_id,
     ganadorId: partido.ganador_id,
+    orden: partido.orden,
     fecha: formatDate(partido.fecha),
     hora: formatTime(partido.hora),
     pista: partido.pista || 'Sin pista',
@@ -68,6 +74,10 @@ function normalizePartido(partido, categoriaMap, parejaMap) {
     estado,
     estadoRaw: partido.estado,
     marcador: formatScore(partido),
+    scores: {
+      a: validSets.map(([a]) => a),
+      b: validSets.map(([, b]) => b),
+    },
     observaciones: partido.observaciones,
     categoria: categoriaMap.get(partido.categoria_id),
     parejaA: parejaMap.get(partido.pareja_a_id),
@@ -82,8 +92,6 @@ function normalizePatrocinador(patrocinador) {
     nombre: patrocinador.nombre,
     logoUrl: patrocinador.logo_url,
     web: patrocinador.web_url,
-    categoria: 'Patrocinador oficial',
-    descripcion: 'Colaborador del torneo',
     orden: patrocinador.orden,
   }
 }
@@ -105,7 +113,8 @@ export async function fetchPublicTournamentData() {
       .order('created_at', { ascending: true }),
     supabase
       .from('partidos')
-      .select('id,categoria_id,ronda,pareja_a_id,pareja_b_id,ganador_id,fecha,hora,pista,estado,set1_a,set1_b,set2_a,set2_b,set3_a,set3_b,observaciones')
+      .select('id,categoria_id,ronda,pareja_a_id,pareja_b_id,ganador_id,fecha,hora,pista,estado,set1_a,set1_b,set2_a,set2_b,set3_a,set3_b,observaciones,orden')
+      .order('orden', { ascending: true, nullsFirst: false })
       .order('fecha', { ascending: true, nullsFirst: false })
       .order('hora', { ascending: true, nullsFirst: false }),
     supabase

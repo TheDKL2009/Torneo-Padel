@@ -1,27 +1,30 @@
+import { Activity, Calendar, Home, LayoutGrid, Network, ShieldCheck, Star } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const publicLinks = [
-  { to: '/', label: 'Inicio' },
-  { to: '/categorias', label: 'Categorias' },
-  { to: '/cuadros', label: 'Cuadros' },
-  { to: '/partidos', label: 'Partidos' },
-  { to: '/horarios', label: 'Horarios' },
-  { to: '/patrocinadores', label: 'Patrocinadores' },
+  { to: '/', label: 'Inicio', icon: Home },
+  { to: '/categorias', label: 'Categorias', icon: LayoutGrid },
+  { to: '/cuadros', label: 'Cuadros', icon: Network },
+  { to: '/partidos', label: 'Partidos', icon: Activity },
+  { to: '/horarios', label: 'Horarios', icon: Calendar },
+  { to: '/patrocinadores', label: 'Patrocinadores', icon: Star },
 ]
 
 function Navbar() {
   return (
     <nav className="navbar" aria-label="Menu principal">
-      {publicLinks.map((link) => (
+      {publicLinks.map(({ to, label, icon: Icon }) => (
         <NavLink
-          key={link.to}
-          to={link.to}
+          key={to}
+          to={to}
           className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
         >
-          {link.label}
+          <Icon size={15} aria-hidden="true" />
+          {label}
         </NavLink>
       ))}
       <NavLink to="/admin" className="nav-link admin-entry">
+        <ShieldCheck size={15} aria-hidden="true" />
         Admin
       </NavLink>
     </nav>
